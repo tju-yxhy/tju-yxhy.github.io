@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#ffffff" />
+  <title>长征·足迹 — 旧址数字漫游</title>
+  <style>
+    :root { color-scheme: light; --paper:#fff; --ink:#252525; --red:#8f241b; --line:#8f241b33; --gold:#b99a61; --rail:60%; }
+    * { box-sizing:border-box; }
+    html { margin:0; min-height:100%; scroll-behavior:smooth; scroll-snap-type:y mandatory; scrollbar-width:none; background:#fff; }
+    html::-webkit-scrollbar, body::-webkit-scrollbar { display:none; }
+    body { margin:0; min-height:100%; overflow-x:hidden; color:var(--ink); font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:#fff; }
+    canvas { position:fixed; inset:0 0 0 var(--rail); z-index:0; display:block; width:calc(100% - var(--rail)); height:100%; touch-action:none; cursor:grab; }
+    canvas:active { cursor:grabbing; }
+    body[data-active-page="cover"] canvas { display:none !important; }
+    #pages { position:relative; z-index:1; pointer-events:none; }
+    .site-page { position:relative; min-height:100svh; scroll-snap-align:start; scroll-snap-stop:always; pointer-events:none; }
+    .site-page::before { content:""; position:absolute; inset:10px; border:1px solid #0000000a; border-radius:9px; pointer-events:none; }
+    .masthead { position:fixed; z-index:4; top:38px; left:6vw; display:flex; align-items:center; gap:13px; pointer-events:none; }
+    .seal { display:grid; place-items:center; width:38px; height:38px; border:1px solid var(--red); color:var(--red); font:700 19px/1 serif; transform:rotate(-5deg); }
+    .brand { font:700 14px/1.2 serif; letter-spacing:.18em; color:var(--red); }
+    .brand small { display:block; margin-top:4px; color:#777; font:10px/1.2 system-ui,sans-serif; letter-spacing:.14em; }
+    #page-copy { position:fixed; z-index:3; left:6vw; top:50%; bottom:auto; transform:translateY(-45%); width:min(660px,45vw); padding:0 0 0 24px; background:transparent; border:0; border-left:3px solid var(--red); box-shadow:none; pointer-events:none; }
+    #eyebrow { color:var(--red); font:600 10px/1.3 system-ui,sans-serif; letter-spacing:.2em; text-transform:uppercase; }
+    #model-title { margin:16px 0 10px; font:700 clamp(42px,4.15vw,64px)/1.08 serif; letter-spacing:.045em; color:#222; }
+    #model-meta { margin:0; font-size:16px; color:#777; letter-spacing:.035em; }
+    #model-description { margin:30px 0 0; max-width:34em; color:#4d4d4d; font-size:19px; line-height:1.9; letter-spacing:.025em; }
+    #highlights { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:28px 0 0; padding:0; list-style:none; }
+    #highlights li { min-height:72px; padding:12px 14px; border-top:1px solid var(--line); color:#4d4d4d; font-size:14px; line-height:1.65; }
+    #highlights li::before { content:attr(data-index); display:block; margin-bottom:5px; color:var(--red); font:600 10px/1 ui-monospace,monospace; letter-spacing:.12em; }
+    #page-count { margin-top:26px; color:var(--red); font:600 11px/1.2 ui-monospace,monospace; letter-spacing:.15em; }
+    #cover-panel { position:fixed; z-index:3; left:6vw; top:50%; width:min(950px,55vw); transform:translateY(-48%); color:var(--ink); }
+    #cover-panel[hidden] { display:none; }
+    body:not([data-active-page="cover"]) #cover-panel { display:none; }
+    body[data-active-page="cover"] #page-copy, body[data-active-page="cover"] #views { display:none; }
+    body[data-active-page="cover"] .page-arrow { display:none; }
+    .cover-kicker { margin:0 0 18px; color:var(--red); font:600 12px/1.4 ui-monospace,monospace; letter-spacing:.22em; }
+    #cover-title { max-width:9em; margin:0; color:#222; font:700 clamp(52px,6.2vw,92px)/1.02 serif; letter-spacing:.04em; }
+    .cover-subtitle { margin:19px 0 0; color:var(--red); font:600 16px/1.6 system-ui,sans-serif; letter-spacing:.12em; }
+    .cover-intro { max-width:38em; margin:25px 0 0; color:#555; font-size:18px; line-height:1.9; }
+    .route-stops { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:18px; margin:35px 0 0; padding:0; list-style:none; }
+    .route-stops li { min-height:80px; padding:12px 8px 0 0; border-top:1px solid var(--line); }
+    .route-stops small { display:block; color:var(--red); font:600 10px/1.2 ui-monospace,monospace; letter-spacing:.15em; }
+    .route-stops strong { display:block; margin-top:9px; font:600 16px/1.35 serif; letter-spacing:.04em; }
+    .cover-footer { display:flex; align-items:center; gap:26px; margin-top:34px; }
+    #start-journey { padding:12px 18px; border:1px solid var(--red); border-radius:3px; color:#fff; background:var(--red); cursor:pointer; font:600 13px/1 system-ui,sans-serif; letter-spacing:.08em; }
+    #start-journey:hover { background:#711b14; }
+    .team-credit { margin:0; color:#777; font-size:12px; letter-spacing:.04em; }
+    #route-nav { position:fixed; z-index:5; top:24px; right:27px; display:flex; gap:7px; padding:6px; border:1px solid #00000017; border-radius:7px; background:#ffffffeb; backdrop-filter:blur(10px); }
+    #route-nav button, #views button, .page-arrow { border:1px solid #77777755; color:#444; background:#fff; cursor:pointer; font:inherit; font-size:12px; line-height:1.2; transition:background .18s,color .18s,border-color .18s,transform .18s; }
+    #route-nav button { min-height:34px; padding:7px 10px; border-radius:4px; }
+    #route-nav button:hover, #route-nav button.active, #views button:hover, #views button.active { color:#fff7e8; border-color:var(--red); background:var(--red); }
+    #views { position:fixed; z-index:5; right:28px; bottom:28px; display:flex; gap:6px; padding:6px; border:1px solid #00000017; border-radius:7px; background:#ffffffeb; backdrop-filter:blur(10px); }
+    #views button { padding:8px 12px; border-radius:4px; }
+    .page-arrow { position:fixed; z-index:4; left:16%; bottom:34px; width:38px; height:32px; border-radius:17px; background:#fff; transform:translateX(-50%); font-size:16px; }
+    .page-arrow:hover { color:white; background:var(--red); border-color:var(--red); }
+    #hint { position:fixed; z-index:3; right:30px; bottom:83px; max-width:210px; text-align:right; color:#666; font-size:11px; line-height:1.7; pointer-events:none; }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    @media (max-width:760px) {
+      :root { --rail:0%; }
+      canvas { top:0; bottom:auto; left:0; width:100%; height:58%; }
+      .masthead { top:17px; left:17px; }
+      .seal { width:32px; height:32px; font-size:16px; }
+      #route-nav { top:62px; left:12px; right:12px; justify-content:space-between; gap:3px; }
+      #route-nav button { flex:1; padding:8px 3px; font-size:11px; }
+      #page-copy { left:20px; top:auto; bottom:70px; transform:none; width:min(560px,calc(100vw - 40px)); padding:0 0 0 14px; }
+      #eyebrow { font-size:9px; }
+      #model-title { margin:7px 0 4px; font-size:clamp(28px,7vw,38px); }
+      #model-meta { font-size:12px; }
+      #model-description { display:block; margin:12px 0 0; font-size:13px; line-height:1.6; }
+      #highlights { gap:7px; margin:12px 0 0; }
+      #highlights li { min-height:0; padding:7px 6px 0 0; font-size:10px; line-height:1.45; }
+      #highlights li::before { font-size:8px; }
+      #page-count { margin-top:10px; }
+      #views { right:14px; bottom:14px; gap:3px; }
+      #views button { padding:8px 9px; font-size:11px; }
+      .page-arrow { left:auto; right:15px; bottom:80px; transform:none; }
+      .page-arrow { display:none; }
+      #hint { display:none; }
+      .site-page::before { inset:6px; }
+      #cover-panel { left:20px; top:45%; width:calc(100vw - 40px); transform:translateY(-25%); }
+      .cover-kicker { margin-bottom:10px; font-size:10px; }
+      #cover-title { font-size:clamp(42px,12vw,64px); }
+      .cover-subtitle { margin-top:10px; font-size:12px; }
+      .cover-intro { margin-top:12px; font-size:13px; line-height:1.65; }
+      .route-stops { grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px 16px; margin-top:17px; }
+      .route-stops li { min-height:52px; padding-top:7px; }
+      .route-stops strong { margin-top:5px; font-size:13px; }
+      .cover-footer { flex-wrap:wrap; gap:10px 16px; margin-top:16px; }
+      #start-journey { padding:10px 13px; font-size:11px; }
+      .team-credit { font-size:10px; }
+    }
+    @media (prefers-reduced-motion:reduce) {
+      html { scroll-behavior:auto; }
+      *,*::before,*::after { transition-duration:.01ms !important; }
+    }
+  </style>
+  <script type="importmap">
+    { "imports": { "three": "https://unpkg.com/three@0.169.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.169.0/examples/jsm/" } }
+  </script>
+</head>
+<body data-active-page="cover">
+  <header class="masthead" aria-label="长征足迹">
+    <span class="seal" aria-hidden="true">征</span>
+    <span class="brand">长征 · 足迹<small>HISTORIC SITES ALONG THE LONG MARCH</small></span>
+  </header>
+  <nav id="route-nav" aria-label="旧址页面">
+    <button data-nav-page="cover" class="active">序章</button>
+    <button data-nav-page="government">瑞金</button>
+    <button data-nav-page="zunyi">遵义</button>
+    <button data-nav-page="yanan">延安</button>
+    <button data-nav-page="huining">会宁</button>
+  </nav>
+  <main id="pages">
+    <section class="site-page" data-page="cover" aria-labelledby="section-cover"><h2 class="sr-only" id="section-cover">长征足迹序章</h2></section>
+    <section class="site-page" data-page="government" aria-labelledby="section-government"><h2 class="sr-only" id="section-government">瑞金临时中央政府旧址</h2></section>
+    <section class="site-page" data-page="zunyi" aria-labelledby="section-zunyi"><h2 class="sr-only" id="section-zunyi">遵义会议旧址</h2></section>
+    <section class="site-page" data-page="yanan" aria-labelledby="section-yanan"><h2 class="sr-only" id="section-yanan">延安岭山寺塔</h2></section>
+    <section class="site-page" data-page="huining" aria-labelledby="section-huining"><h2 class="sr-only" id="section-huining">会宁会师楼</h2></section>
+  </main>
+  <section id="cover-panel" aria-labelledby="cover-title">
+    <p class="cover-kicker">HISTORIC SITES ALONG THE LONG MARCH</p>
+    <h1 id="cover-title">长征 · 足迹</h1>
+    <p class="cover-subtitle">沿着历史坐标，重访长征记忆</p>
+    <p class="cover-intro">从瑞金出发，经遵义转折，抵达陕北，再到会宁会师。沿着长征时间线，以可交互的三维建筑走近四处历史现场。</p>
+    <ol class="route-stops" aria-label="四处历史旧址">
+      <li><small>01 / 瑞金 · 1934</small><strong>临时中央政府旧址</strong></li>
+      <li><small>02 / 遵义 · 1935</small><strong>会议旧址</strong></li>
+      <li><small>03 / 陕北 · 1935</small><strong>延安 · 岭山寺塔</strong></li>
+      <li><small>04 / 会宁 · 1936</small><strong>会师楼</strong></li>
+    </ol>
+    <div class="cover-footer">
+      <button id="start-journey" type="button">开始寻访　↓</button>
+      <p class="team-credit">天津大学「瑶湘呼应」实践队开发</p>
+    </div>
+  </section>
+  <aside id="page-copy" aria-live="polite">
+    <div id="eyebrow">01 / HISTORIC SITE</div>
+    <h1 id="model-title">会宁会师楼</h1>
+    <p id="model-meta">三军会师地标 · 城墙宽约 50 米</p>
+    <p id="model-description">陇原古城上的会师地标。厚重城墙围合出内院，券门贯通南北，双层门楼以飞檐灰瓦勾勒出建筑轮廓。</p>
+    <ul id="highlights" aria-label="长征节点"></ul>
+    <div id="page-count">02 — 05</div>
+  </aside>
+  <nav id="views" aria-label="模型视角">
+    <button data-view="perspective" class="active">透视</button>
+    <button data-view="front">正面</button>
+    <button data-view="side">侧面</button>
+    <button data-view="top">平面</button>
+  </nav>
+  <button id="page-arrow" class="page-arrow" aria-label="下一处旧址">↓</button>
+  <div id="hint">滚轮 / 滑动 / ↑ ↓ 切换页面<br>拖动旋转模型 · Alt + 滚轮缩放</div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
